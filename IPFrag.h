@@ -6,7 +6,7 @@
  * @brief  
  **********************************************************************************
  *
- *! Copyright (c) 2022 Ali Moallem (MIT License)
+ *! Copyright (c) 2022 Mahda Embedded System (MIT License)
  *!
  *! Permission is hereby granted, free of charge, to any person obtaining a copy
  *! of this software and associated documentation files (the "Software"), to deal
@@ -46,85 +46,102 @@ extern "C" {
 //? User Configurations and Notes ------------------------------------------------- //
 // Important Notes:
 // 1. Declare IPFrag_Handler_t one struct and fill it before calling any functions
-// 2. The static size would be IPFrag_PoolNumber * (IPFrag_DataMTUSize + 3) Bytes
+// 2. The static size would be ((IPFrag_PoolNumber + 1) * (IPFrag_DataMTUSize + 8)) - 8 Bytes
 // 3. Maximum size of a whole packet must be less than or equal to IPFrag_PoolNumber * (IPFrag_DataMTUSize - 4)
-#define IPFrag_DataMTUSize             1400        // Must be a factor of 8 | Max number of data in a frame to transfer
+// 4. This library uses dynamic memory allocation
+#define IPFrag_DataMTUSize             1472         // Must be a factor of 8 | Max number of data in a frame to transfer
 #define IPFrag_PoolNumber              10          // Number of array to save data
-#define IPFrag_USE_MACRO_DELAY         0           // 0: Use handler delay ,So you have to set IPFrag_Delay_MS in Handler | 1: use Macro delay, So you have to set IPFrag_MACRO_DELAY_MS Macro
-// #define IPFrag_MACRO_DELAY_MS(x)                   // If you want to use Macro delay, place your delay function in milliseconds here
+#define IPFrag_USE_MACRO_DELAY         0           // 0: Use handler delay ,So you have to set IPFrag_Delay in Handler | 1: use Macro delay, So you have to set IPFrag_MACRO_DELAY Macro
+// #define IPFrag_MACRO_DELAY(x)                      // If you want to use Macro delay, place your delay function
 #define IPFRAG_Debug_Enable            1           // 0: Disable debug | 1: Enable debug (depends on printf in stdio.h)              
 // #define IPFRAG_Optimization                        // WILL BE ADDED LATER
 //? ------------------------------------------------------------------------------- //
-
-//* Defines and Macros ------------------------------------------------------------ //
-
-
-//! DO NOT USE OR EDIT THIS BLOCK ------------------------------------------------- //
-//! ------------------------------------------------------------------------------- //
-
-/**
- ** ==================================================================================
- **                                 ##### Enums #####                               
- ** ==================================================================================
- **/
-
-/**
- ** ==================================================================================
- **                                ##### Typedef #####                               
- ** ==================================================================================
- **/
 
 /**
  ** ==================================================================================
  **                                ##### Struct #####                               
  ** ==================================================================================
  **/
-
+/**
+ * @brief  Handling Library
+ * @note   Information about paramters are added in their lines
+ */
 typedef struct IPFrag_Handler_s
 {
-    void      (*TransmitData)(uint8_t *Data, uint32_t SizeOfData);
-    void      (*ReceiveData)(uint8_t *Data, uint32_t *SizeOfData);
-    uint16_t  (*RandomIP)(void);
-    void      (*Delay_MS)(uint32_t MS);
+    void            (*TransmitData)(uint8_t * Data, uint32_t SizeOfData);   //* Transmit function | Must be initialized at first
+    void            (*ReceiveData)(uint8_t * Data, uint32_t * SizeOfData);  //* Receive function | Must be initialized at first
+    uint16_t        (*RandomID)(void);                                      //* Random ID function | Can be initialized
+    void            (*Delay)(uint32_t);                                     //* Delay function | Can be initialized
+    uint32_t        (*GetTick)(void);                                       //* Get Tick of program function | Can be initialized
+    const uint32_t    ReceiveTimeout;                                       //* Receiving data | Can be defined
+    bool              DataReady;                                            //! DO NOT EDIT THIS
 } IPFrag_Handler_t;
-
-
-/**
- ** ==================================================================================
- **                               ##### Variables #####                               
- ** ==================================================================================
- **/
-
-/**
- ** ==================================================================================
- **                                 ##### Union #####                               
- ** ==================================================================================
- **/
 
 /**
  ** ==================================================================================
  **                            ##### Public Functions #####                               
  ** ==================================================================================
  **/
-
-// Return values:
-// 0: successful
-// 1: ---
-// 2: ---
-// 3: ---
-// 4: invalid input pointer
-// 5: IPFrag_DataMTUSize is not a factor of 8
+/**
+ * @brief  Transmitting data with fragmantation
+ * @note   This function works as blocking mode
+ * @param  Handler:         Pointer of library handler
+ * @param  DataBuff:        Pointer of data to transmit
+ * @param  SizeofDataBuff:  Size of data to transmit
+ * @retval  0: Successful
+ *          1: ---
+ *          2: ---
+ *          3: Invalid input pointer
+ */
 uint8_t
-IPFrag_TransmitData(IPFrag_Handler_t *Handler, uint8_t *DataBuff, uint32_t SizeofDataBuff);
-// Return values:
-// 0: successful
-// 1: memory error
-// 2: timeout error
-// 3: full pool buffer
-// 4: invalid input pointer
-// 5: IPFrag_DataMTUSize is not a factor of 8
+IPFrag_TransmitData(IPFrag_Handler_t* Handler, uint8_t* DataBuff, uint32_t SizeofDataBuff);
+/**
+ *  @brief  Receiving data with fragmantation
+ *  @note   This function works as blocking mode
+ *  @param  Handler         Pointer of library handler
+ *  @param  DataBuff        Pointer of pointer of data to receive
+ *          @note           In this function pointer of data will be malloced, 
+ *                          Do not malloc it before calling the function to avoid from memory lost!
+ *                          And user should free it itself.
+ *  @param  SizeofDataBuff  Pointer of size of data to receive
+ *  @param  Timeout         Maximum time to be kept in this function
+ *          @note           If user does not initialize delay in handler, this parameters treats as number of tries.
+ *  @return 0: Successful
+ *          1: Memory error
+ *          2: Timeout error
+ *          3: Invalid input pointer
+ */
 uint8_t
-IPFrag_ReceiveData(IPFrag_Handler_t *Handler, uint8_t **DataBuff, uint32_t *SizeofDataBuff);
+IPFrag_ReceiveData(IPFrag_Handler_t* Handler, uint8_t** DataBuff, uint32_t* SizeofDataBuff, uint32_t Timeout);
+/**
+ *  @brief   Receiving data callback
+ *  @note    Call this function when a data received
+ *  @param   Handler  Pointer of library handler
+ *  @return  0: Successful
+ *           1: ---
+ *           2: ---
+ *           3: Invalid input pointer
+ *           4: No completed packets
+ */
+uint8_t
+IPFrag_CallbackReceive(IPFrag_Handler_t* Handler);
+/**
+ *  @brief                  Reading received data
+ *  @param  Handler         Pointer of library handler
+ *  @param  DataBuff        Pointer of pointer of data to receive
+ *          @note           In this function pointer of data will be malloced, 
+ *                          Do not malloc it before calling the function to avoid from memory lost!
+ *                          And user should free it itself.
+ *  @param  SizeofDataBuff  Pointer of size of data to receive
+ *  @return 0: Successful
+ *          1: Memory error
+ *          2: ---
+ *          3: Invalid input pointer
+ *          4: ---
+ *          5: Data is not ready to read, recall the function.
+ */
+uint8_t
+IPFrag_ReadReceive(IPFrag_Handler_t* Handler, uint8_t** DataBuff, uint32_t* SizeofDataBuff);
 
 #ifdef __cplusplus
 }
