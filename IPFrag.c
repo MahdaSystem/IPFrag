@@ -196,7 +196,7 @@ IPFrag_ReceiveData(IPFrag_Handler_t* Handler, uint8_t** DataBuff, uint32_t* Size
             if (DataPoolSize[CounterPacket] == 0)
             {
                 DataPoolTimeout[CounterPacket] = Handler->GetTick();
-                Handler->ReceiveData(DataPool[CounterPacket], (uint32_t *)&DataPoolSize[CounterPacket]);
+                Handler->ReceiveData(DataPool[CounterPacket], &DataPoolSize[CounterPacket]);
                 if (DataPoolSize[CounterPacket] < 5)
                 {
                     PROGRAMLOG("The size is less than 5 bytes!\r\n");
@@ -213,7 +213,7 @@ IPFrag_ReceiveData(IPFrag_Handler_t* Handler, uint8_t** DataBuff, uint32_t* Size
         if (FullPool)
         {
             PROGRAMLOG("Pool is Full!\r\n");
-            uint32_t DataPoolTempSize = 0;
+            uint16_t DataPoolTempSize = 0;
             uint8_t* DataPoolTemp = malloc(IPFrag_DataMTUSize);
             if (!DataPoolTemp) continue;
             Handler->ReceiveData(DataPoolTemp, &DataPoolTempSize);
@@ -397,7 +397,7 @@ IPFrag_CallbackReceive(IPFrag_Handler_t* Handler)
         if (DataPoolSize[CounterPacket] == 0)
         {
             DataPoolTimeout[CounterPacket] = Handler->GetTick();
-            Handler->ReceiveData(DataPool[CounterPacket], (uint32_t *)&DataPoolSize[CounterPacket]);
+            Handler->ReceiveData(DataPool[CounterPacket], &DataPoolSize[CounterPacket]);
             if (DataPoolSize[CounterPacket] < 5)
             {
                 PROGRAMLOG("The size is less than 5 bytes!\r\n");
@@ -414,7 +414,7 @@ IPFrag_CallbackReceive(IPFrag_Handler_t* Handler)
     if (FullPool)
     {
         PROGRAMLOG("Pool is Full!\r\n");
-        uint32_t DataPoolTempSize = 0;
+        uint16_t DataPoolTempSize = 0;
         uint8_t* DataPoolTemp = malloc(IPFrag_DataMTUSize);
         if (!DataPoolTemp) return IPFrag_CallbackReceive(Handler);
         Handler->ReceiveData(DataPoolTemp, &DataPoolTempSize);

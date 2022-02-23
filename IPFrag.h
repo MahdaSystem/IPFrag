@@ -68,8 +68,8 @@ extern "C" {
  */
 typedef struct IPFrag_Handler_s
 {
-    void            (*TransmitData)(uint8_t * Data, uint32_t SizeOfData);   //* Transmit function | Must be initialized at first
-    void            (*ReceiveData)(uint8_t * Data, uint32_t * SizeOfData);  //* Receive function | Must be initialized at first
+    void            (*TransmitData)(uint8_t * Data, uint16_t SizeOfData);   //* Transmit function | Must be initialized at first
+    void            (*ReceiveData)(uint8_t * Data, uint16_t * SizeOfData);  //* Receive function | Must be initialized at first
     uint16_t        (*RandomID)(void);                                      //* Random ID function | Can be initialized
     void            (*Delay)(uint32_t);                                     //* Delay function | Can be initialized
     uint32_t        (*GetTick)(void);                                       //* Get Tick of program function | Can be initialized
